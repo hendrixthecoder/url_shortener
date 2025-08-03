@@ -15,8 +15,9 @@ import (
 )
 
 type AppConfig struct {
-	DB  *database.Queries
-	Env string
+	DB     *database.Queries
+	Env    string
+	AppURL string
 }
 
 func main() {
@@ -37,6 +38,11 @@ func main() {
 		log.Fatal("DB_URL not provided in .env")
 	}
 
+	appUrl := os.Getenv("APP_URL")
+	if appUrl == "" {
+		log.Fatal("APP_URL not provided in .env")
+	}
+
 	db, err := sql.Open("postgres", dbString)
 	if err != nil {
 		log.Fatal("Failed to open Postgres driver:", err)
@@ -47,8 +53,9 @@ func main() {
 	InitRedisStore()
 
 	appConfig := &AppConfig{
-		DB:  conn,
-		Env: env,
+		DB:     conn,
+		Env:    env,
+		AppURL: appUrl,
 	}
 
 	router := chi.NewRouter()

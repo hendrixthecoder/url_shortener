@@ -10,6 +10,15 @@ import (
 	"github.com/google/uuid"
 )
 
+type Url struct {
+	ID        uuid.UUID
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	PlainUrl  string
+	ShortUrl  string
+	UserID    uuid.UUID
+}
+
 type User struct {
 	ID        uuid.UUID
 	CreatedAt time.Time

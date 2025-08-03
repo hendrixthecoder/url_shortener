@@ -7,18 +7,19 @@ import (
 
 type contextKey string
 
-const userContextKey = contextKey("user_email")
-
 func (appConfig *AppConfig) authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		session, _ := store.Get(r, "user-session")
-		email, ok := session.Values["user_email"].(string)
-		if !ok {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		user_id, ok1 := session.Values["user_id"].(string)
+		email, ok2 := session.Values["user_email"].(string)
+
+		if !ok1 || user_id == "" || !ok2 || email == "" {
+			respondWithError(w, 401, "Unauthorized")
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), userContextKey, email)
+		ctx := context.WithValue(r.Context(), contextKey("user_id"), user_id)
+		ctx = context.WithValue(ctx, contextKey("email"), email)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

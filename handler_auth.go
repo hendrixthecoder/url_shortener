@@ -2,10 +2,12 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/hendrixthecoder/url_shortener/internal/database"
 )
 
@@ -33,6 +35,7 @@ func (appConfig *AppConfig) handlerCreateUser(w http.ResponseWriter, r *http.Req
 	}
 
 	_, err = appConfig.DB.CreateUser(r.Context(), database.CreateUserParams{
+		ID:        uuid.New(),
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: time.Now().UTC(),
 		Name:      params.Name,
@@ -74,16 +77,17 @@ func (appConfig *AppConfig) handlerLoginUser(w http.ResponseWriter, r *http.Requ
 
 	session, err := store.Get(r, "user-session")
 	if err != nil {
-		respondWithError(w, 500, "Error logging in, try again!")
+		respondWithError(w, 500, fmt.Sprintf("Error logging in, try again!: %v", err))
 		return
 	}
 
 	session.Values["user_email"] = user.Email
+	session.Values["user_id"] = user.ID.String()
 	session.Options.HttpOnly = appConfig.Env == "production"
 	session.Options.Secure = appConfig.Env == "production"
 	err = session.Save(r, w)
 	if err != nil {
-		respondWithError(w, 500, "Error logging in, try again!")
+		respondWithError(w, 500, fmt.Sprintf("Error logging in, try again!: %v", err))
 		return
 	}
 
