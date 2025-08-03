@@ -1,0 +1,91 @@
+package main
+
+import (
+	"encoding/json"
+	"log"
+	"net/http"
+	"time"
+
+	"github.com/hendrixthecoder/url_shortener/internal/database"
+)
+
+func (appConfig *AppConfig) handlerCreateUser(w http.ResponseWriter, r *http.Request) {
+	type parameters struct {
+		Name     string `json:"name"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	params := parameters{}
+
+	err := decoder.Decode(&params)
+	if err != nil {
+		log.Println("Error decoding request body:", err)
+		respondWithError(w, 400, "Invalid request data")
+		return
+	}
+
+	hashedPassword, err := hashPassword(params.Password)
+	if err != nil {
+		respondWithError(w, 500, "Error creating account, try again.")
+		return
+	}
+
+	_, err = appConfig.DB.CreateUser(r.Context(), database.CreateUserParams{
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+		Name:      params.Name,
+		Email:     params.Email,
+		Password:  hashedPassword,
+	})
+
+	if err != nil {
+		log.Println("Error creating user:", err)
+		respondWithError(w, 400, "Could not create user.")
+		return
+	}
+
+	respondWithJSON(w, 201, "Account created succesfully!")
+}
+
+func (appConfig *AppConfig) handlerLoginUser(w http.ResponseWriter, r *http.Request) {
+	type parameters struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	decoder := json.NewDecoder(r.Body)
+
+	params := parameters{}
+	err := decoder.Decode(&params)
+	if err != nil {
+		log.Println("Error decoding request body:", err)
+		respondWithError(w, 400, "Invalid request data")
+		return
+	}
+
+	user, err := appConfig.DB.GetUserByEmail(r.Context(), params.Email)
+	if err != nil || !checkPasswordHash(params.Password, user.Password) {
+		log.Println("Error decoding request body:", err)
+		respondWithError(w, 400, "Invalid credentials.")
+		return
+	}
+
+	session, err := store.Get(r, "user-session")
+	if err != nil {
+		respondWithError(w, 500, "Error logging in, try again!")
+		return
+	}
+
+	session.Values["user_email"] = user.Email
+	session.Options.HttpOnly = appConfig.Env == "production"
+	session.Options.Secure = appConfig.Env == "production"
+	err = session.Save(r, w)
+	if err != nil {
+		respondWithError(w, 500, "Error logging in, try again!")
+		return
+	}
+
+	respondWithJSON(w, 201, "Logged in succesfully!")
+}
