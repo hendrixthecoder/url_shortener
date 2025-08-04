@@ -14,6 +14,8 @@ require (
 
 require github.com/lib/pq v1.10.9
 
+require github.com/gorilla/csrf v1.7.3 // indirect
+
 require (
 	github.com/gomodule/redigo v1.9.2 // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect

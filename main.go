@@ -4,11 +4,11 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/gorilla/csrf"
 	"github.com/hendrixthecoder/url_shortener/internal/database"
 	"github.com/joho/godotenv"
 
@@ -24,27 +24,9 @@ type AppConfig struct {
 func main() {
 	godotenv.Load()
 
-	portString := os.Getenv("PORT")
-	if portString == "" {
-		log.Fatal("PORT not provided in .env")
-	}
+	config := LoadConfig()
 
-	dbString := os.Getenv("DB_URL")
-	if dbString == "" {
-		log.Fatal("DB_URL not provided in .env")
-	}
-
-	env := os.Getenv("ENV")
-	if env == "" {
-		log.Fatal("DB_URL not provided in .env")
-	}
-
-	appUrl := os.Getenv("APP_URL")
-	if appUrl == "" {
-		log.Fatal("APP_URL not provided in .env")
-	}
-
-	db, err := sql.Open("postgres", dbString)
+	db, err := sql.Open("postgres", config.dbString)
 	if err != nil {
 		log.Fatal("Failed to open Postgres driver:", err)
 	}
@@ -55,13 +37,19 @@ func main() {
 
 	appConfig := &AppConfig{
 		DB:     conn,
-		Env:    env,
-		AppURL: appUrl,
+		Env:    config.env,
+		AppURL: config.appUrl,
 	}
 
 	router := chi.NewRouter()
 
+	csrfMiddleware := csrf.Protect(
+		config.csrfKey,
+		csrf.Secure(config.env == "production"),
+	)
+
 	router.Use(middleware.Logger)
+	router.Use(csrfMiddleware)
 
 	router.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"http://*", "http://"},
@@ -85,10 +73,10 @@ func main() {
 
 	srv := &http.Server{
 		Handler: router,
-		Addr:    ":" + portString,
+		Addr:    ":" + config.portString,
 	}
 
-	log.Println("Server starting on port:", portString)
+	log.Println("Server starting on port:", config.portString)
 
 	err = srv.ListenAndServe()
 	if err != nil {

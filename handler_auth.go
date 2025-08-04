@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/gorilla/csrf"
 	"github.com/hendrixthecoder/url_shortener/internal/database"
 )
 
@@ -91,5 +92,11 @@ func (appConfig *AppConfig) handlerLoginUser(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, "Logged in succesfully!")
+	csrf_token := csrf.Token(r)
+
+	type Response struct {
+		CSRFToken string `json:"csrf_token"`
+	}
+
+	respondWithJSON(w, http.StatusOK, Response{CSRFToken: csrf_token})
 }
