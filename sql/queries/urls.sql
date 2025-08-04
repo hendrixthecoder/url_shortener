@@ -5,3 +5,6 @@ RETURNING *;
 
 -- name: GetURLEntryByShortURL :one
 SELECT * FROM urls WHERE short_url = $1;
+
+-- name: GetURLEntriesByUserID :many
+SELECT * FROM urls WHERE user_id = $1;

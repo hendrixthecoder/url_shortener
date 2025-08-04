@@ -28,18 +28,9 @@ func (appConfig *AppConfig) handlerShortenUrl(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	user_id_val := r.Context().Value(contextKey("user_id"))
-	user_id_str, ok := user_id_val.(string)
-	if !ok {
-		log.Println("user_id missing from context or not a string")
-		respondWithError(w, http.StatusUnauthorized, "Unauthorized")
-		return
-	}
-
-	user_id, err := uuid.Parse(user_id_str)
+	user_id, err := getUserIDFromContext(r)
 	if err != nil {
-		log.Println("Invalid user_id")
-		respondWithError(w, http.StatusBadRequest, "Invalid user.")
+		respondWithError(w, http.StatusInternalServerError, "Something went wrong.")
 		return
 	}
 

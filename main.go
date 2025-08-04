@@ -62,10 +62,12 @@ func main() {
 
 	v1Router := chi.NewRouter()
 
-	v1Router.Post("/users", appConfig.handlerCreateUser)
+	v1Router.Post("/register", appConfig.handlerCreateUser)
 	v1Router.Post("/login", appConfig.handlerLoginUser)
 
 	v1Router.Post("/shorten", appConfig.authMiddleware(appConfig.handlerShortenUrl))
+
+	v1Router.Get("/urls", appConfig.authMiddleware(appConfig.handlerGetUserURLs))
 
 	v1Router.Get("/{short_url}", appConfig.handlerGetPlainUrl)
 

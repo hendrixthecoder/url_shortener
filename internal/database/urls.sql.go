@@ -48,6 +48,40 @@ func (q *Queries) CreateNewShortURL(ctx context.Context, arg CreateNewShortURLPa
 	return i, err
 }
 
+const getURLEntriesByUserID = `-- name: GetURLEntriesByUserID :many
+SELECT id, created_at, updated_at, plain_url, short_url, user_id FROM urls WHERE user_id = $1
+`
+
+func (q *Queries) GetURLEntriesByUserID(ctx context.Context, userID uuid.UUID) ([]Url, error) {
+	rows, err := q.db.QueryContext(ctx, getURLEntriesByUserID, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Url
+	for rows.Next() {
+		var i Url
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.PlainUrl,
+			&i.ShortUrl,
+			&i.UserID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getURLEntryByShortURL = `-- name: GetURLEntryByShortURL :one
 SELECT id, created_at, updated_at, plain_url, short_url, user_id FROM urls WHERE short_url = $1
 `

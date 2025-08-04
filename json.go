@@ -4,7 +4,31 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/hendrixthecoder/url_shortener/internal/database"
 )
+
+type URL struct {
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	UserID    uuid.UUID `json:"user_id"`
+	ShortUrl  string    `json:"short_url"`
+	PlainUrl  string    `json:"plain_url"`
+}
+
+func databaseURLToUrl(url database.Url) URL {
+	return URL{
+		ID:        url.ID,
+		CreatedAt: url.CreatedAt,
+		UpdatedAt: url.UpdatedAt,
+		UserID:    url.UserID,
+		ShortUrl:  url.ShortUrl,
+		PlainUrl:  url.PlainUrl,
+	}
+}
 
 func respondWithError(w http.ResponseWriter, code int, msg string) {
 	if code > 499 {

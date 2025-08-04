@@ -6,9 +6,11 @@ import (
 	"errors"
 	"log"
 	"math/rand"
+	"net/http"
 	"net/url"
 	"time"
 
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -63,4 +65,32 @@ func generateUniqueShortCode(appConfig *AppConfig) (string, error) {
 
 	}
 	return "", errors.New("could not generate unique short code after 10 attempts")
+}
+
+func getUserIDFromContext(r *http.Request) (uuid.UUID, error) {
+	user_id_val := r.Context().Value(contextKey("user_id"))
+	user_id_str, ok := user_id_val.(string)
+	if !ok {
+		log.Println("user_id missing from context or not a string")
+		return uuid.Nil, errors.New("UserID missing from string.")
+	}
+
+	user_id, err := uuid.Parse(user_id_str)
+	if err != nil {
+		log.Println("Invalid user_id")
+		return uuid.Nil, errors.New("Invalid user ID")
+	}
+
+	return user_id, nil
+}
+
+// Serializer func to serialize slice of data from Goose types to JSON-normalized type.
+func dtoSliceSerializer[T any, DTO any](data []T, serializer func(T) DTO) []DTO {
+	serialized := make([]DTO, len(data))
+
+	for idx, feed := range data {
+		serialized[idx] = serializer(feed)
+	}
+
+	return serialized
 }
