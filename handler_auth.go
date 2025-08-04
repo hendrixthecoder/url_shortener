@@ -24,13 +24,13 @@ func (appConfig *AppConfig) handlerCreateUser(w http.ResponseWriter, r *http.Req
 	err := decoder.Decode(&params)
 	if err != nil {
 		log.Println("Error decoding request body:", err)
-		respondWithError(w, 400, "Invalid request data")
+		respondWithError(w, http.StatusBadRequest, "Invalid request data")
 		return
 	}
 
 	hashedPassword, err := hashPassword(params.Password)
 	if err != nil {
-		respondWithError(w, 500, "Error creating account, try again.")
+		respondWithError(w, http.StatusBadRequest, "Error creating account, try again.")
 		return
 	}
 
@@ -45,11 +45,11 @@ func (appConfig *AppConfig) handlerCreateUser(w http.ResponseWriter, r *http.Req
 
 	if err != nil {
 		log.Println("Error creating user:", err)
-		respondWithError(w, 400, "Could not create user.")
+		respondWithError(w, http.StatusBadRequest, "Could not create user.")
 		return
 	}
 
-	respondWithJSON(w, 201, "Account created succesfully!")
+	respondWithJSON(w, http.StatusCreated, "Account created succesfully!")
 }
 
 func (appConfig *AppConfig) handlerLoginUser(w http.ResponseWriter, r *http.Request) {
@@ -64,20 +64,20 @@ func (appConfig *AppConfig) handlerLoginUser(w http.ResponseWriter, r *http.Requ
 	err := decoder.Decode(&params)
 	if err != nil {
 		log.Println("Error decoding request body:", err)
-		respondWithError(w, 400, "Invalid request data")
+		respondWithError(w, http.StatusBadRequest, "Invalid request data")
 		return
 	}
 
 	user, err := appConfig.DB.GetUserByEmail(r.Context(), params.Email)
 	if err != nil || !checkPasswordHash(params.Password, user.Password) {
 		log.Println("Error decoding request body:", err)
-		respondWithError(w, 400, "Invalid credentials.")
+		respondWithError(w, http.StatusBadRequest, "Invalid credentials.")
 		return
 	}
 
 	session, err := store.Get(r, "user-session")
 	if err != nil {
-		respondWithError(w, 500, fmt.Sprintf("Error logging in, try again!: %v", err))
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Error logging in, try again!: %v", err))
 		return
 	}
 
@@ -87,9 +87,9 @@ func (appConfig *AppConfig) handlerLoginUser(w http.ResponseWriter, r *http.Requ
 	session.Options.Secure = appConfig.Env == "production"
 	err = session.Save(r, w)
 	if err != nil {
-		respondWithError(w, 500, fmt.Sprintf("Error logging in, try again!: %v", err))
+		respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("Error logging in, try again!: %v", err))
 		return
 	}
 
-	respondWithJSON(w, 201, "Logged in succesfully!")
+	respondWithJSON(w, http.StatusOK, "Logged in succesfully!")
 }

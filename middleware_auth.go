@@ -14,7 +14,7 @@ func (appConfig *AppConfig) authMiddleware(next http.HandlerFunc) http.HandlerFu
 		email, ok2 := session.Values["user_email"].(string)
 
 		if !ok1 || user_id == "" || !ok2 || email == "" {
-			respondWithError(w, 401, "Unauthorized")
+			respondWithError(w, http.StatusUnauthorized, "Unauthorized")
 			return
 		}
 

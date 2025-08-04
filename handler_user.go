@@ -24,7 +24,7 @@ func (appConfig *AppConfig) handlerShortenUrl(w http.ResponseWriter, r *http.Req
 	err := decoder.Decode(&params)
 	if err != nil {
 		log.Println("Error decoding request body:", err)
-		respondWithError(w, 400, "Invalid request data")
+		respondWithError(w, http.StatusBadRequest, "Invalid request data")
 		return
 	}
 
@@ -32,25 +32,25 @@ func (appConfig *AppConfig) handlerShortenUrl(w http.ResponseWriter, r *http.Req
 	user_id_str, ok := user_id_val.(string)
 	if !ok {
 		log.Println("user_id missing from context or not a string")
-		respondWithError(w, 401, "Unauthorized")
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	user_id, err := uuid.Parse(user_id_str)
 	if err != nil {
 		log.Println("Invalid user_id")
-		respondWithError(w, 400, "Invalid user.")
+		respondWithError(w, http.StatusBadRequest, "Invalid user.")
 		return
 	}
 
 	if !isValidURL(params.URL) {
-		respondWithError(w, 400, "Invalid URL passed.")
+		respondWithError(w, http.StatusBadRequest, "Invalid URL passed.")
 		return
 	}
 
 	short_url, err := generateUniqueShortCode(appConfig)
 	if err != nil {
-		respondWithError(w, 400, "Error generating short url, try again!")
+		respondWithError(w, http.StatusBadRequest, "Error generating short url, try again!")
 		return
 	}
 
@@ -65,30 +65,30 @@ func (appConfig *AppConfig) handlerShortenUrl(w http.ResponseWriter, r *http.Req
 
 	if err != nil {
 		log.Println("Error generating short url:", err)
-		respondWithError(w, 400, "Error generating short url, try again!")
+		respondWithError(w, http.StatusBadRequest, "Error generating short url, try again!")
 		return
 	}
 
-	respondWithJSON(w, 200, parameters{URL: appConfig.AppURL + "/" + short_url})
+	respondWithJSON(w, http.StatusOK, parameters{URL: appConfig.AppURL + "/" + short_url})
 }
 
 func (appConfig *AppConfig) handlerGetPlainUrl(w http.ResponseWriter, r *http.Request) {
 	short_url := chi.URLParam(r, "short_url")
 
 	if len(short_url) < 6 {
-		respondWithError(w, 400, "Invalid short code passed!")
+		respondWithError(w, http.StatusBadRequest, "Invalid short code passed!")
 		return
 	}
 
 	record, err := appConfig.DB.GetURLEntryByShortURL(r.Context(), short_url)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			respondWithError(w, 404, "Short URL not found")
+			respondWithError(w, http.StatusNotFound, "Short URL not found")
 			return
 		}
 
 		log.Println("Error fetching URL:", err)
-		respondWithError(w, 500, "Error fetching URL")
+		respondWithError(w, http.StatusInternalServerError, "Error fetching URL")
 		return
 	}
 
