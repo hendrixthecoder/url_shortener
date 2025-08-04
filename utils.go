@@ -6,8 +6,10 @@ import (
 	"errors"
 	"log"
 	"math/rand"
+	"net"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -93,4 +95,18 @@ func dtoSliceSerializer[T any, DTO any](data []T, serializer func(T) DTO) []DTO 
 	}
 
 	return serialized
+}
+
+func getIP(r *http.Request) string {
+	forwarded := r.Header.Get("X-Forwarded-For")
+	if forwarded != "" {
+		parts := strings.Split(forwarded, ",")
+		return strings.TrimSpace(parts[0])
+	}
+
+	ip, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
+	}
+	return ip
 }

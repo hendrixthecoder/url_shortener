@@ -1,14 +1,11 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/json"
-	"errors"
 	"log"
 	"net/http"
 	"time"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/hendrixthecoder/url_shortener/internal/database"
 )
@@ -52,6 +49,7 @@ func (appConfig *AppConfig) handlerShortenUrl(w http.ResponseWriter, r *http.Req
 		PlainUrl:  params.URL,
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: time.Now().UTC(),
+		ExpiresAt: time.Now().AddDate(1, 0, 0),
 	})
 
 	if err != nil {
@@ -61,27 +59,4 @@ func (appConfig *AppConfig) handlerShortenUrl(w http.ResponseWriter, r *http.Req
 	}
 
 	respondWithJSON(w, http.StatusOK, parameters{URL: appConfig.AppURL + "/" + short_url})
-}
-
-func (appConfig *AppConfig) handlerGetPlainUrl(w http.ResponseWriter, r *http.Request) {
-	short_url := chi.URLParam(r, "short_url")
-
-	if len(short_url) < 6 {
-		respondWithError(w, http.StatusBadRequest, "Invalid short code passed!")
-		return
-	}
-
-	record, err := appConfig.DB.GetURLEntryByShortURL(r.Context(), short_url)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			respondWithError(w, http.StatusNotFound, "Short URL not found")
-			return
-		}
-
-		log.Println("Error fetching URL:", err)
-		respondWithError(w, http.StatusInternalServerError, "Error fetching URL")
-		return
-	}
-
-	http.Redirect(w, r, record.PlainUrl, http.StatusFound)
 }

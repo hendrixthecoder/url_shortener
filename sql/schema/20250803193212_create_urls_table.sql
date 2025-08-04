@@ -6,7 +6,8 @@ CREATE TABLE urls (
     updated_at TIMESTAMP NOT NULL DEFAULT now(),
     plain_url TEXT NOT NULL,
     short_url TEXT UNIQUE NOT NULL,
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    expires_at TIMESTAMP NOT NULL
 );
 
 CREATE INDEX idx_urls_user_id ON urls(user_id);

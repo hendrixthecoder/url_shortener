@@ -17,6 +17,17 @@ type Url struct {
 	PlainUrl  string
 	ShortUrl  string
 	UserID    uuid.UUID
+	ExpiresAt time.Time
+}
+
+type UrlAnalytic struct {
+	ID        uuid.UUID
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Referer   string
+	UserAgent string
+	Ip        string
+	ShortUrl  string
 }
 
 type User struct {

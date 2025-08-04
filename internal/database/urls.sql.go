@@ -13,9 +13,9 @@ import (
 )
 
 const createNewShortURL = `-- name: CreateNewShortURL :one
-INSERT INTO urls (id, created_at, updated_at, user_id, short_url, plain_url) 
-VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, created_at, updated_at, plain_url, short_url, user_id
+INSERT INTO urls (id, created_at, updated_at, user_id, short_url, plain_url, expires_at) 
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING id, created_at, updated_at, plain_url, short_url, user_id, expires_at
 `
 
 type CreateNewShortURLParams struct {
@@ -25,6 +25,7 @@ type CreateNewShortURLParams struct {
 	UserID    uuid.UUID
 	ShortUrl  string
 	PlainUrl  string
+	ExpiresAt time.Time
 }
 
 func (q *Queries) CreateNewShortURL(ctx context.Context, arg CreateNewShortURLParams) (Url, error) {
@@ -35,6 +36,7 @@ func (q *Queries) CreateNewShortURL(ctx context.Context, arg CreateNewShortURLPa
 		arg.UserID,
 		arg.ShortUrl,
 		arg.PlainUrl,
+		arg.ExpiresAt,
 	)
 	var i Url
 	err := row.Scan(
@@ -44,12 +46,24 @@ func (q *Queries) CreateNewShortURL(ctx context.Context, arg CreateNewShortURLPa
 		&i.PlainUrl,
 		&i.ShortUrl,
 		&i.UserID,
+		&i.ExpiresAt,
 	)
 	return i, err
 }
 
+const deleteExpiredURLEntries = `-- name: DeleteExpiredURLEntries :exec
+DELETE FROM urls
+WHERE expires_at IS NOT NULL
+    AND expires_at <= $1
+`
+
+func (q *Queries) DeleteExpiredURLEntries(ctx context.Context, expiresAt time.Time) error {
+	_, err := q.db.ExecContext(ctx, deleteExpiredURLEntries, expiresAt)
+	return err
+}
+
 const getURLEntriesByUserID = `-- name: GetURLEntriesByUserID :many
-SELECT id, created_at, updated_at, plain_url, short_url, user_id FROM urls WHERE user_id = $1
+SELECT id, created_at, updated_at, plain_url, short_url, user_id, expires_at FROM urls WHERE user_id = $1
 `
 
 func (q *Queries) GetURLEntriesByUserID(ctx context.Context, userID uuid.UUID) ([]Url, error) {
@@ -68,6 +82,7 @@ func (q *Queries) GetURLEntriesByUserID(ctx context.Context, userID uuid.UUID) (
 			&i.PlainUrl,
 			&i.ShortUrl,
 			&i.UserID,
+			&i.ExpiresAt,
 		); err != nil {
 			return nil, err
 		}
@@ -83,7 +98,7 @@ func (q *Queries) GetURLEntriesByUserID(ctx context.Context, userID uuid.UUID) (
 }
 
 const getURLEntryByShortURL = `-- name: GetURLEntryByShortURL :one
-SELECT id, created_at, updated_at, plain_url, short_url, user_id FROM urls WHERE short_url = $1
+SELECT id, created_at, updated_at, plain_url, short_url, user_id, expires_at FROM urls WHERE short_url = $1
 `
 
 func (q *Queries) GetURLEntryByShortURL(ctx context.Context, shortUrl string) (Url, error) {
@@ -96,6 +111,7 @@ func (q *Queries) GetURLEntryByShortURL(ctx context.Context, shortUrl string) (U
 		&i.PlainUrl,
 		&i.ShortUrl,
 		&i.UserID,
+		&i.ExpiresAt,
 	)
 	return i, err
 }

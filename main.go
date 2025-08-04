@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"log"
 	"net/http"
@@ -33,13 +34,15 @@ func main() {
 
 	conn := database.New(db)
 
-	InitRedisStore()
-
 	appConfig := &AppConfig{
 		DB:     conn,
 		Env:    config.env,
 		AppURL: config.appUrl,
 	}
+
+	ctx := context.Background()
+	go StartURLCleaner(appConfig, ctx)
+	InitRedisStore()
 
 	router := chi.NewRouter()
 
