@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/hendrixthecoder/url_shortener/internal/database"
 	"github.com/joho/godotenv"
@@ -60,6 +61,8 @@ func main() {
 
 	router := chi.NewRouter()
 
+	router.Use(middleware.Logger)
+
 	router.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"http://*", "http://"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -76,6 +79,8 @@ func main() {
 
 	v1Router.Post("/shorten", appConfig.authMiddleware(appConfig.handlerShortenUrl))
 
+	v1Router.Get("/{short_url}", appConfig.handlerGetPlainUrl)
+
 	router.Mount("/v1", v1Router)
 
 	srv := &http.Server{
@@ -89,6 +94,4 @@ func main() {
 	if err != nil {
 		log.Fatal("Could not spin up server:", err)
 	}
-
-	log.Println("Server running on port:", portString)
 }
